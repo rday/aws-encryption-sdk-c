@@ -211,9 +211,11 @@ int aws_cryptosdk_priv_try_decrypt_body(
             session->frame_size)) {
         if (aws_last_error() == AWS_ERROR_SHORT_BUFFER) {
             // Not actually an error. We've updated the estimates, so move on.
+            printf("XXX wooooooooooo\n");
             return AWS_OP_SUCCESS;
         } else {
             // Frame format was malformed. Propagate the error up the chain.
+            printf("XXXX frame format is fucked\n");
             return AWS_OP_ERR;
         }
     }
@@ -222,18 +224,24 @@ int aws_cryptosdk_priv_try_decrypt_body(
     // contents and decrypt.
 
     if (session->frame_seqno != frame.sequence_number) {
+        printf("XXX err bad cipher\n");
         return aws_raise_error(AWS_CRYPTOSDK_ERR_BAD_CIPHERTEXT);
     }
 
     // Before we go further, do we have enough room to place the plaintext?
+    printf("XXX Output Size Estimate %lu\n", session->output_size_estimate);
     struct aws_byte_buf output;
+    aws_byte_buf_init(&output, aws_default_allocator(), session->output_size_estimate);
     if (!aws_byte_buf_advance(poutput, &output, session->output_size_estimate)) {
         *pinput = input_rollback;
         // No progress due to not enough plaintext output space.
+        printf("XXX no prog not enough ptext\n");
         return AWS_OP_SUCCESS;
     }
 
     // We have everything we need, try to decrypt
+    printf("XXX Input Size Estimate %lu\n", session->input_size_estimate);
+    aws_byte_buf_init(&frame.ciphertext, aws_default_allocator(), session->input_size_estimate);
     struct aws_byte_cursor ciphertext_cursor = aws_byte_cursor_from_buf(&frame.ciphertext);
     int rv                                   = aws_cryptosdk_decrypt_body(
         session->alg_props,
@@ -252,6 +260,7 @@ int aws_cryptosdk_priv_try_decrypt_body(
         if (session->signctx) {
             struct aws_byte_cursor frame = { .ptr = input_rollback.ptr, .len = pinput->ptr - input_rollback.ptr };
             if (aws_cryptosdk_sig_update(session->signctx, frame)) {
+                printf("XXX sig_update failed %d\n", AWS_OP_ERR);
                 return AWS_OP_ERR;
             }
         }
@@ -260,10 +269,12 @@ int aws_cryptosdk_priv_try_decrypt_body(
             aws_cryptosdk_priv_session_change_state(session, ST_CHECK_TRAILER);
         }
 
+        printf("XXX rv == AWS_ERROR_SUCCESS %d\n", rv);
         return rv;
     }
 
     // An error was encountered; the top level loop will transition to the error state
+    printf("XXX wtf how %d\n", rv);
     return rv;
 }
 

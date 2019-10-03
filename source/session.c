@@ -238,9 +238,10 @@ int aws_cryptosdk_session_process(
                 result = AWS_OP_SUCCESS;
                 break;
 
-            case ST_READ_HEADER: result = aws_cryptosdk_priv_try_parse_header(session, &input); break;
+            case ST_READ_HEADER: printf("XXX read_header\n"); result = aws_cryptosdk_priv_try_parse_header(session, &input); break;
             case ST_UNWRAP_KEY: result = aws_cryptosdk_priv_unwrap_keys(session); break;
             case ST_DECRYPT_BODY:
+                printf("XXX decrypt_body\n");
                 result = aws_cryptosdk_priv_try_decrypt_body(session, &remaining_space, &input);
                 break;
             case ST_CHECK_TRAILER: result = aws_cryptosdk_priv_check_trailer(session, &input); break;
@@ -248,6 +249,7 @@ int aws_cryptosdk_session_process(
             case ST_GEN_KEY: result = aws_cryptosdk_priv_try_gen_key(session); break;
             case ST_WRITE_HEADER: result = aws_cryptosdk_priv_try_write_header(session, &remaining_space); break;
             case ST_ENCRYPT_BODY:
+                printf("XXX encrypt\n");
                 result = aws_cryptosdk_priv_try_encrypt_body(session, &remaining_space, &input);
                 break;
             case ST_WRITE_TRAILER: result = aws_cryptosdk_priv_write_trailer(session, &remaining_space); break;
@@ -258,7 +260,7 @@ int aws_cryptosdk_session_process(
         }
 
         made_progress = (remaining_space.len) || (input.ptr != old_inp) || (prior_state != session->state);
-
+        printf("XXX result - prog | %s %d\n", aws_error_str(result), made_progress);
         output.len += remaining_space.len;
     } while (result == AWS_OP_SUCCESS && made_progress);
 

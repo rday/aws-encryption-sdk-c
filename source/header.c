@@ -302,6 +302,8 @@ int aws_cryptosdk_hdr_write(
     // TODO - unify everything on byte_bufs when the aws-c-common refactor lands
     // See: https://github.com/awslabs/aws-c-common/pull/130
     struct aws_byte_buf aad_length_field;
+    aws_byte_buf_init(&aad_length_field, aws_default_allocator(), 0);
+
     if (!aws_byte_buf_advance(&output, &aad_length_field, 2)) goto WRITE_ERR;
 
     size_t old_len = output.len;
